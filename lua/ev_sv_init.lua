@@ -19,3 +19,8 @@ hook.Add( "PlayerSpawn", "EvolveInit", function( ply )
 		ply.EV_SentInit = true
 	end
 end )
+
+if evolve.MySQLEnabled then
+	require("mysqloo")
+	evolve:MySQLConnect()
+end

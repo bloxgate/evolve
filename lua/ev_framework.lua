@@ -403,6 +403,56 @@ function _R.Entity:EV_GetRank() if ( !self:IsValid() ) then return "owner" end e
 function _R.Entity:UniqueID() if ( !self:IsValid() ) then return 0 end end
 
 /*-------------------------------------------------------------------------------------------------------------------------
+	MySQL
+-------------------------------------------------------------------------------------------------------------------------*/
+
+function evolve:MySQLConnect()
+	local info = self.MySQLConfig
+	self.database = mysqloo.connect(info.ip, info.user, info.password, info.database)
+	self.database.onConnected = function(database)
+		local create_table = database:query([[CREATE TABLE IF NOT EXISTS evolve
+			(id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+			SteamID64 BIGINT NOT NULL,
+			Nick TINYTEXT NOT NULL,
+			IPAddress VARCHAR(22) NOT NULL,
+			Rank VARCHAR(50) NOT NULL,
+			LastJoin INT(10) UNSIGNED NOT NULL,
+			PlayTime INT UNSIGNED NOT NULL,
+			PRIMARY KEY(id))
+		]])
+		create_table:start()
+	end
+	self.database:connect()
+end
+
+function evolve.PlayerAuthed_MySQL(ply, steamid, uniqueid)
+	if evolve.MySQLEnabled then
+		local player_exists = evolve.database:query("SELECT * FROM evolve WHERE SteamID64 = "..ply:SteamID64().." LIMIT 1;")
+		player_exists.onSuccess = function(self)
+			local data = self:getData()
+			if #data <= 0 then
+				local _time = tonumber(os.time())
+				local insert = evolve.database:query(string.format("INSERT INTO evolve(`SteamID64`, `Nick`, `IPAddress`, `Rank`, `LastJoin`, `PlayTime`) VALUES('%s', %s, '%s', 'guest', %i, 0);",
+					ply:SteamID64(), sql.SQLStr(ply:Nick()), ply:IPAddress(), _time))
+				insert:start()
+				evolve.PlayerInfo[ply:SteamID64()] = {
+					Nick = ply:Nick(),
+					IPAddress = ply:IPAddress(),
+					Rank = "guest",
+					LastJoin = _time,
+					PlayTime = 0
+				}
+			else
+				data[1].SteamID64 = nil
+				evolve.PlayerInfo[ply:SteamID64()] = table.Copy(data)
+			end
+		end
+		player_exists:start()
+	end
+end
+hook.Add("PlayerAuthed", "Evolve_MySQL", evolve.PlayerAuthed_MySQL)
+
+/*-------------------------------------------------------------------------------------------------------------------------
 	Player information
 -------------------------------------------------------------------------------------------------------------------------*/
 

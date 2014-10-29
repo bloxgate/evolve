@@ -42,8 +42,10 @@ function PLUGIN:Call( ply, args )
 			Make sure the player exists and we're allowed to ban it
 		-------------------------------------------------------------------------------------------------------------------------*/
 		
+		print("loelel")
 		local plyImmunity = tonumber( evolve.ranks[ ply:EV_GetRank() ].Immunity )
 		evolve:GetProperty(steamid64, "Rank", "guest", function(victim_rank)
+			print("test!")
 			local vicImmunity = tonumber( evolve.ranks[victim_rank].Immunity )	
 			if ( !steamid64 or vicImmunity > plyImmunity ) then
 				evolve:Notify( ply, evolve.colors.red, evolve.constants.noplayers2 )
@@ -57,8 +59,8 @@ function PLUGIN:Call( ply, args )
 			local length = math.Clamp( tonumber( args[2] ) or 5, 0, 10080 ) * 60
 			local reason = table.concat( args, " ", 3 )
 			if ( #reason == 0 ) then reason = "No reason specified" end
-			evolve:GetProperty( uid, "Nick", nil, function(nick)
-				evolve:Ban( uid, length, reason, ply:UniqueID() )
+			evolve:GetProperty(steamid64, "Nick", nil, function(nick)
+				evolve:Ban( steamid64, length, reason, ply:SteamID64() )
 				if ( length == 0 ) then
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " banned ", evolve.colors.red, nick, evolve.colors.white, " permanently (" .. reason .. ")." )
 				else

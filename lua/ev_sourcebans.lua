@@ -32,39 +32,21 @@ sourcebans.SetConfig( "serverid", 1 )
 sourcebans.Activate()
 
 local function syncBans()
-	--[[for uid, _ in pairs( evolve.PlayerInfo ) do
-		evolve:SetProperty( uid, "BanEnd", nil )
-		evolve:SetProperty( uid, "BanReason", nil )
-		evolve:SetProperty( uid, "BanAdmin", nil )
-	end
+	local update = evolve.database:query("UPDATE evolve SET BanReason = NULL, BanEnd = NULL, BanAdmin = NULL")
+	update:start()
 	sourcebans.GetAllActiveBans( function( bans )
 		for _, ban in ipairs( bans ) do			
-			local uid = util.CRC( "gm_" .. ban.SteamID .. "_gm" )
-			
-			if ( !evolve.PlayerInfo[uid] ) then evolve.PlayerInfo[uid] = {} end
-			
-			evolve.PlayerInfo[uid].SteamID = ban.SteamID
-			if ( ban.BanLength > 0 ) then
-				evolve.PlayerInfo[uid].BanEnd = ban.BanEnd
+			local steamid64 = util.SteamIDTo64(ban.SteamID)
+			local admin
+			if ban.AdminID == "STEAM_ID_UNKNOWN" then
+				admin = 0
 			else
-				evolve.PlayerInfo[uid].BanEnd = 0
+				admin = util.SteamIDFrom64(ban.AdminID)
 			end
-			evolve.PlayerInfo[uid].BanReason = ban.BanReason
-			evolve.PlayerInfo[uid].Nick = ban.Name
-			
-			if ( ban.AdminID == "STEAM_ID_UNKNOWN" ) then
-				evolve.PlayerInfo[uid].BanAdmin = 0
-			else
-				local adminuid = util.CRC( "gm_" .. ban.AdminID .. "_gm" )
-				evolve.PlayerInfo[uid].BanAdmin = adminuid
-				
-				if ( !evolve.PlayerInfo[adminuid] ) then
-					evolve.PlayerInfo[adminuid] = {}
-					evolve.PlayerInfo[adminuid].Nick = ban.AdminName
-				end
-			end
+			local query = evolve.database:query("UPDATE evolve SET BanReason = "..sql.SQLStr(ban.BanReason)..", BanEnd = "..ban.End..", BanAdmin = "..admin.." WHERE SteamID64 = "..steamid64.." LIMIT 1;")
+			query:start()
 		end
-	end )]]--
+	end )
 end
 timer.Create( "EV_SourceBansSync", 300, 0, syncBans )
 timer.Simple( 1, syncBans )

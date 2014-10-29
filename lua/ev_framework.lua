@@ -425,10 +425,13 @@ function evolve:MySQLConnect()
 		]])
 		create_table:start()
 	end
+	self.database.onConnectionFailed = function(db, e)
+		evolve:Log("MySQL connection error : "..e)
+	end
 	self.database:connect()
 end
 
-function evolve.PlayerAuthed_MySQL(ply, steamid, uniqueid)
+function evolve.PlayerInitialSpawn_MySQL(ply)
 	local steamid64 = ply:SteamID64()
 	local player_exists = evolve.database:query("SELECT Nick,IPAddress,Rank,LastJoin,PlayTime FROM evolve WHERE SteamID64 = "..steamid64.." LIMIT 1;")
 	player_exists.onSuccess = function(self)
@@ -472,7 +475,7 @@ function evolve.PlayerAuthed_MySQL(ply, steamid, uniqueid)
 	end
 	player_exists:start()
 end
-hook.Add("PlayerAuthed", "Evolve_MySQL", evolve.PlayerAuthed_MySQL)
+hook.Add("PlayerInitialSpawn", "Evolve_MySQL", evolve.PlayerInitialSpawn_MySQL)
 
 /*-------------------------------------------------------------------------------------------------------------------------
 	Player information
@@ -1119,7 +1122,7 @@ if ( SERVER ) then
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(uniqueid))
 					net.WriteString(v.Nick)
-					net.WriteString(util.SteamIDFrom64(v.SteamID))
+					net.WriteString(util.SteamIDFrom64(v.SteamID64))
 					net.WriteString(v.BanReason)
 					net.WriteString(admin)
 					net.WriteUInt(_time, 32)
@@ -1145,7 +1148,7 @@ if ( SERVER ) then
 		
 		evolve:GetProperty(uid, "Nick", nil, function(nick)
 			local a = "Console"
-			if ( adminuid != 0 ) then a = player.GetByUniqueID( adminuid ):Nick() end
+			if ( adminuid != 0 ) then a = evolve:GetBySteamID64(adminuid):Nick() end
 			net.Start("EV_BanEntry")
 				net.WriteString(tostring(uid))
 				net.WriteString(nick)
@@ -1158,7 +1161,7 @@ if ( SERVER ) then
 			-- Let SourceBans do the kicking or Evolve
 			if ( sourcebans ) then
 				local admin
-				if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
+				if ( adminuid != 0 ) then admin = evolve:GetBySteamID64(adminuid) end
 				evolve:GetProperty(uid, "IPAddress", "", function(ip)
 					sourcebans.BanPlayerBySteamIDAndIP(util.SteamIDFrom64(uid), ip, math.max( 0, length ), reason, admin, nick)
 				end)
@@ -1174,7 +1177,9 @@ if ( SERVER ) then
 						pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
 					end
 				else
-					game.ConsoleCommand( "addip " .. length / 60 .. " \"" .. string.match( evolve:GetProperty( uid, "IPAddress" ), "(%d+%.%d+%.%d+%.%d+)" ) .. "\"\n" )
+					evolve:GetProperty(uid, "IPAdress", "0.0.0.0", function(ip)
+						game.ConsoleCommand( "addip " .. length / 60 .. " \"" .. string.match(ip, "(%d+%.%d+%.%d+%.%d+)" ) .. "\"\n" )
+					end)
 				end
 			end
 		end)

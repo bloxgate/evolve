@@ -418,6 +418,9 @@ function evolve:MySQLConnect()
 			Rank VARCHAR(50) NOT NULL,
 			LastJoin INT(10) UNSIGNED NOT NULL,
 			PlayTime INT UNSIGNED NOT NULL,
+			BanEnd INT UNSIGNED,
+			BanReason VARCHAR(255),
+			BanAdmin BIGINT,
 			PRIMARY KEY(id))
 		]])
 		create_table:start()
@@ -426,29 +429,48 @@ function evolve:MySQLConnect()
 end
 
 function evolve.PlayerAuthed_MySQL(ply, steamid, uniqueid)
-	if evolve.MySQLEnabled then
-		local player_exists = evolve.database:query("SELECT * FROM evolve WHERE SteamID64 = "..ply:SteamID64().." LIMIT 1;")
-		player_exists.onSuccess = function(self)
-			local data = self:getData()
-			if #data <= 0 then
-				local _time = tonumber(os.time())
-				local insert = evolve.database:query(string.format("INSERT INTO evolve(`SteamID64`, `Nick`, `IPAddress`, `Rank`, `LastJoin`, `PlayTime`) VALUES('%s', %s, '%s', 'guest', %i, 0);",
-					ply:SteamID64(), sql.SQLStr(ply:Nick()), ply:IPAddress(), _time))
-				insert:start()
-				evolve.PlayerInfo[ply:SteamID64()] = {
-					Nick = ply:Nick(),
-					IPAddress = ply:IPAddress(),
-					Rank = "guest",
-					LastJoin = _time,
-					PlayTime = 0
-				}
-			else
-				data[1].SteamID64 = nil
-				evolve.PlayerInfo[ply:SteamID64()] = table.Copy(data)
+	local steamid64 = ply:SteamID64()
+	local player_exists = evolve.database:query("SELECT Nick,IPAddress,Rank,LastJoin,PlayTime FROM evolve WHERE SteamID64 = "..steamid64.." LIMIT 1;")
+	player_exists.onSuccess = function(self)
+		local data = self:getData()
+		local message = { evolve.colors.blue, ply:Nick(), evolve.colors.white }
+		local lastjoin, lastnick = nil, nil
+		local first = false
+		local _time = tonumber(os.time())
+		evolve.PlayerInfo[steamid64] = {
+			Nick = ply:Nick(),
+			IPAddress = ply:IPAddress(),
+			LastJoin = _time
+		}
+		if #data <= 0 then
+			first = true
+			local _time = tonumber(os.time())
+			local insert = evolve.database:query(string.format("INSERT INTO evolve(`SteamID64`, `Nick`, `IPAddress`, `Rank`, `LastJoin`, `PlayTime`) VALUES('%s', %s, '%s', 'guest', %i, 0);",
+				steamid64, sql.SQLStr(ply:Nick()), ply:IPAddress(), _time))
+			insert:start()
+			evolve.PlayerInfo[steamid64].Rank = "guest"
+			evolve.PlayerInfo[steamid64].PlayTime = 0
+		else
+			evolve.PlayerInfo[steamid64].Rank = data[1].Rank
+			evolve.PlayerInfo[steamid64].PlayTime = data[1].PlayTime
+			lastjoin = data[1].LastJoin
+			lastnick = data[1].Nick
+			ply:SetProperty("Nick", ply:Nick())
+			ply:SetProperty("IPAddress", ply:IPAddress())
+			ply:SetProperty("LastJoin", _time)
+		end
+		if first then
+			table.Add(message, {" has joined for the first time", evolve.colors.white})
+		else
+			table.Add(message, {" last joined ", evolve.colors.red, evolve:FormatTime(_time - lastjoin) .. " ago", evolve.colors.white})
+			if lastnick != ply:Nick() then
+				table.insert(message, " as " .. lastnick)
 			end
 		end
-		player_exists:start()
+		table.insert(message, ".")
+		evolve:Notify(unpack(message))
 	end
+	player_exists:start()
 end
 hook.Add("PlayerAuthed", "Evolve_MySQL", evolve.PlayerAuthed_MySQL)
 
@@ -472,74 +494,71 @@ if SERVER then
 	end
 end
 
-function _R.Player:GetProperty( id, defaultvalue )	
-	if ( evolve.PlayerInfo[ self:UniqueID() ] ) then
-		return evolve.PlayerInfo[ self:UniqueID() ][ id ] or defaultvalue
+function _R.Player:GetProperty(id, defaultvalue)
+	local steamid64 = self:SteamID64()
+	if evolve.PlayerInfo[steamid64] then
+		return evolve.PlayerInfo[steamid64][id] or defaultvalue
 	else
 		return defaultvalue
 	end
 end
 
-function _R.Player:SetProperty( id, value )
-	if ( !evolve.PlayerInfo[ self:UniqueID() ] ) then evolve.PlayerInfo[ self:UniqueID() ] = {} end
-	
-	evolve.PlayerInfo[ self:UniqueID() ][ id ] = value
-end
-
-function evolve:UniqueIDByProperty( property, value, exact )	
-	for k, v in pairs( evolve.PlayerInfo ) do
-		if ( v[ property ] == value ) then
-			return k
-		elseif ( !exact and string.find( string.lower( v[ property ] or "" ), string.lower( value ) ) ) then
-			return k
-		end
+function evolve:GetSecureValue(value)
+	if value then
+		return type(value) == "string" and sql.SQLStr(value) or value
 	end
+	return "NULL"
 end
 
-function evolve:GetProperty( uniqueid, id, defaultvalue )
-	uniqueid = tostring( uniqueid )
-	
-	if ( evolve.PlayerInfo[ uniqueid ] ) then
-		return evolve.PlayerInfo[ uniqueid ][ id ] or defaultvalue
+function evolve:UpdateProperty(steamid64, id, value)
+	local update = self.database:query("UPDATE evolve SET "..id.." = "..self:GetSecureValue(value).." WHERE SteamID64 = "..steamid64.." LIMIT 1;")
+	update:start()
+end
+
+function _R.Player:SetProperty(id, value)
+	local steamid64 = self:SteamID64()
+	if not evolve.PlayerInfo[steamid64] then
+		evolve.PlayerInfo[steamid64] = {}
+	end
+	evolve.PlayerInfo[steamid64][id] = value
+	evolve:UpdateProperty(steamid64, id, value)
+end
+
+function evolve:SteamIDByProperty(property, value, callback)	
+	local query = self.database:query("SELECT SteamID64 FROM evolve WHERE "..property.." = "..self:GetSecureValue(value).." LIMIT 1;")
+	query.callback = callback
+	query.onSuccess = function(query)
+		query.callback(query:getData()[1])
+	end
+	query:start()
+end
+
+function evolve:GetProperty(steamid64, id, defaultvalue, callback)
+	steamid64 = tostring(steamid64)
+	if self.PlayerInfo[steamid64] then
+		callback(self.PlayerInfo[steamid64][id] or defaultvalue)
 	else
-		return defaultvalue
-	end
-end
-
-function evolve:SetProperty( uniqueid, id, value )
-	uniqueid = tostring( uniqueid )
-	if ( !evolve.PlayerInfo[ uniqueid ] ) then evolve.PlayerInfo[ uniqueid ] = {} end
-	
-	evolve.PlayerInfo[ uniqueid ][ id ] = value
-end
-
-function evolve:CommitProperties()
-	/*-------------------------------------------------------------------------------------------------------------------------
-		Check if a cleanup would be convenient
-	-------------------------------------------------------------------------------------------------------------------------*/
-	
-	local count = table.Count( evolve.PlayerInfo )
-	
-	if ( count > 800 ) then
-		local original = count
-		local info = {}
-		for uid, entry in pairs( evolve.PlayerInfo ) do
-			table.insert( info, { UID = uid, LastJoin = entry.LastJoin, Rank = entry.Rank } )
-		end
-		table.SortByMember( info, "LastJoin", function(a, b) return a > b end )
-		
-		for _, entry in pairs( info ) do
-			if ( ( !entry.BanEnd or entry.BanEnd < os.time() ) and ( !entry.Rank or entry.Rank == "guest" ) ) then
-				evolve.PlayerInfo[ entry.UID ] = nil
-				count = count - 1
-				if ( count < 800 ) then break end
+		local qselect = self.database:query("SELECT "..id.." FROM evolve WHERE SteamID64 = "..steamid64.." LIMIT 1;")
+		qselect.callback = callback
+		qselect.onSuccess = function(qselect)
+			local data = qselect:getData()
+			if not data[1] then
+				qselect.callback(defaultvalue)
+			else
+				qselect.callback(data[1][id])
 			end
 		end
-		
-		evolve:Message( "Cleaned up " .. original - count .. " players." )
+		qselect:start()
 	end
-	
-	evolve:SavePlayerInfo()
+	return defaultvalue --!
+end
+
+function evolve:SetProperty(steamid64, id, value)
+	steamid64 = tostring(steamid64)
+	if evolve.PlayerInfo[steamid64] then
+		evolve.PlayerInfo[steamid64][id] = value
+	end
+	evolve:UpdateProperty(steamid64, id, value)
 end
 
 /*-------------------------------------------------------------------------------------------------------------------------
@@ -607,7 +626,6 @@ end
 
 function _R.Player:EV_SetRank( rank )
 	self:SetProperty( "Rank", rank )
-	evolve:CommitProperties()
 	
 	self:SetNWString( "EV_UserGroup", rank )
 	
@@ -673,7 +691,6 @@ function evolve:Rank( ply )
 					usergroup = rank
 					
 					ply:SetProperty( "Rank", rank )
-					evolve:CommitProperties()
 					
 					break
 				end
@@ -1081,28 +1098,40 @@ end
 	Banning
 -------------------------------------------------------------------------------------------------------------------------*/
 
+function evolve:GetBySteamID64(steamid64)
+	for k,v in pairs(player.GetAll()) do
+		if v:SteamID64() == steamid64 then 
+			return v
+		end
+	end
+end
+
 if ( SERVER ) then
+	
 	function evolve:SyncBans( ply )
-		for uniqueid, info in pairs( evolve.PlayerInfo ) do
-			if ( info.BanEnd and ( info.BanEnd > os.time() or info.BanEnd == 0 ) ) then
-				local time = info.BanEnd - os.time()
-				if ( info.BanEnd == 0 ) then time = 0 end
-				net.Start("EV_BanEntry")
-					
+		local query = evolve.database:query("SELECT Nick,SteamID64,BanReason,BanEnd,BanAdmin FROM evolve WHERE BanEnd > "..os.time().." OR BanEnd = 0")
+		query.onSuccess = function(query)
+			local data = query:getData()
+			for k,v in pairs(data) do
+				local _time = v.BanEnd - tonumber(os.time())
+				if v.BanEnd == 0 then _time = 0 end
+				evolve:GetProperty(v.BanAdmin, "Nick", "Console", function(admin)
+					net.Start("EV_BanEntry")
 					net.WriteString(tostring(uniqueid))
-					net.WriteString(info.Nick)
-					net.WriteString(info.SteamID)
-					net.WriteString(info.BanReason)
-					net.WriteString(evolve:GetProperty(info.BanAdmin, "Nick") or "Console")
-					net.WriteUInt(time, 32)
-					
-				if ply == nil then
-					net.Broadcast()
-				else
-					net.Send(ply)
-				end
+					net.WriteString(v.Nick)
+					net.WriteString(util.SteamIDFrom64(v.SteamID))
+					net.WriteString(v.BanReason)
+					net.WriteString(admin)
+					net.WriteUInt(_time, 32)
+					if ply == nil then
+						net.Broadcast()
+					else
+						net.Send(ply)
+					end
+				end)
 			end
 		end
+		query:start()
 	end
 	
 	function evolve:Ban( uid, length, reason, adminuid )		
@@ -1113,48 +1142,49 @@ if ( SERVER ) then
 		end
 		evolve:SetProperty( uid, "BanReason", reason )
 		evolve:SetProperty( uid, "BanAdmin", adminuid )
-		evolve:CommitProperties()
 		
-		local a = "Console"
-		if ( adminuid != 0 ) then a = player.GetByUniqueID( adminuid ):Nick() end
-		net.Start("EV_BanEntry")
-			net.WriteString(tostring(uid))
-			net.WriteString(evolve:GetProperty(uid, "Nick"))
-			net.WriteString(evolve:GetProperty(uid, "SteamID"))
-			net.WriteString(reason)
-			net.WriteString(a)
-			net.WriteUInt(length, 32)
-		net.Broadcast()
+		evolve:GetProperty(uid, "Nick", nil, function(nick)
+			local a = "Console"
+			if ( adminuid != 0 ) then a = player.GetByUniqueID( adminuid ):Nick() end
+			net.Start("EV_BanEntry")
+				net.WriteString(tostring(uid))
+				net.WriteString(nick)
+				net.WriteString(util.SteamIDFrom64(uid))
+				net.WriteString(reason)
+				net.WriteString(a)
+				net.WriteUInt(length, 32)
+			net.Broadcast()
 		
-		-- Let SourceBans do the kicking or Evolve
-		if ( sourcebans ) then
-			local admin
-			if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
-			
-			sourcebans.BanPlayerBySteamIDAndIP( evolve:GetProperty( uid, "SteamID" ), evolve:GetProperty( uid, "IPAddress" ) or "", math.max( 0, length ), reason, admin, evolve:GetProperty( uid, "Nick" ) )
-		else
-			local pl
-			if ( uid != 0 ) then pl = player.GetByUniqueID( uid ) end
-			
-			if ( pl ) then
-				game.ConsoleCommand( "banid " .. length / 60 .. " " .. pl:SteamID() .. "\n" )
-				
-				if ( length < 0 ) then
-					pl:Kick( "Permabanned! (" .. reason .. ")" )
-				else
-					pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
-				end
+			-- Let SourceBans do the kicking or Evolve
+			if ( sourcebans ) then
+				local admin
+				if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
+				evolve:GetProperty(uid, "IPAddress", "", function(ip)
+					sourcebans.BanPlayerBySteamIDAndIP(util.SteamIDFrom64(uid), ip, math.max( 0, length ), reason, admin, nick)
+				end)
 			else
-				game.ConsoleCommand( "addip " .. length / 60 .. " \"" .. string.match( evolve:GetProperty( uid, "IPAddress" ), "(%d+%.%d+%.%d+%.%d+)" ) .. "\"\n" )
+				local pl
+				if ( uid != 0 ) then pl = evolve:GetBySteamID64(uid) end
+				if IsValid(pl) then
+					game.ConsoleCommand( "banid " .. length / 60 .. " " .. pl:SteamID() .. "\n" )
+				
+					if ( length < 0 ) then
+						pl:Kick( "Permabanned! (" .. reason .. ")" )
+					else
+						pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
+					end
+				else
+					game.ConsoleCommand( "addip " .. length / 60 .. " \"" .. string.match( evolve:GetProperty( uid, "IPAddress" ), "(%d+%.%d+%.%d+%.%d+)" ) .. "\"\n" )
+				end
 			end
-		end
+		end)
+		
 	end
 	
 	function evolve:UnBan( uid, adminuid )		
 		evolve:SetProperty( uid, "BanEnd", nil )
 		evolve:SetProperty( uid, "BanReason", nil )
 		evolve:SetProperty( uid, "BanAdmin", nil )
-		evolve:CommitProperties()
 		
 		net.Start("EV_RemoveBanEntry")
 			net.WriteString(tostring(uid))
@@ -1164,22 +1194,25 @@ if ( SERVER ) then
 			local admin
 			if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
 			
-			sourcebans.UnbanPlayerBySteamID( evolve:GetProperty( uid, "SteamID" ), "No reason specified.", admin )
+			sourcebans.UnbanPlayerBySteamID(util.SteamIDFrom64(uid), "No reason specified.", admin)
 		else
 			game.ConsoleCommand( "removeip \"" .. ( evolve:GetProperty( uid, "IPAddress" ) or "" ) .. "\"\n" )
 			game.ConsoleCommand( "removeid " .. evolve:GetProperty( uid, "SteamID" ) .. "\n" )
 		end
 	end
 	
-	function evolve:IsBanned( uid )
-		local banEnd = evolve:GetProperty( uid, "BanEnd" )
-		
-		if ( banEnd and banEnd > 0 and os.time() > banEnd ) then
-			evolve:UnBan( uid )
-			return false
-		end
-		
-		return banEnd and ( banEnd > os.time() or banEnd == 0 )
+	function evolve:IsBanned(steamid64, callback)
+		evolve:GetProperty(steamid64, "BanEnd", nil, function(banEnd)
+			if not banEnd then
+				callback(false)
+			else
+				if ( banEnd and banEnd > 0 and os.time() > banEnd ) then
+					evolve:UnBan( uid )
+					callback(true, false)
+				end	
+				callback(true, banEnd and ( banEnd > os.time() or banEnd == 0 ))
+			end
+		end)
 	end
 else
 	net.Receive( "EV_BanEntry", function( length )

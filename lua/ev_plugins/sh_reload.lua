@@ -18,7 +18,6 @@ function PLUGIN:Call( ply, args )
 			pl:SetProperty( "LastJoin", os.time() )
 			saveRequired = true
 		end
-		if ( saveRequired ) then evolve:CommitProperties() end
 		
 		RunConsoleCommand( "changelevel", game.GetMap() )
 	else

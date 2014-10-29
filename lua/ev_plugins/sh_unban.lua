@@ -13,25 +13,36 @@ PLUGIN.Privileges = { "Unban" }
 function PLUGIN:Call( ply, args )
 	if ( ply:EV_HasPrivilege( "Unban" ) ) then
 		if ( args[1] ) then
-			local uniqueID
+			local steamid
 			
 			if ( string.match( args[1], "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then
-				uniqueID = evolve:UniqueIDByProperty( "SteamID", args[1], true )
+				steamid = util.SteamIDTo64(args[1])
 			else
-				uniqueID = evolve:UniqueIDByProperty( "Nick", args[1], false )
+				evolve:Notify( ply, evolve.colors.red, "Invalid SteamID!")
+				return
 			end
 			
-			if ( uniqueID and evolve:IsBanned( uniqueID ) ) then
-				evolve:UnBan( uniqueID, ply:UniqueID() )
-				
-				evolve:Notify( evolve.colors.blue, ply:Nick(), color_white, " has unbanned ", evolve.colors.red, evolve:GetProperty( uniqueID, "Nick" ), color_white, "." )
-			elseif ( uniqueID ) then
-				evolve:Notify( ply, evolve.colors.red, evolve:GetProperty( uniqueID, "Nick" ) .. " is not currently banned." )
+			if steamid then
+				evolve:IsBanned( steamid, function(found, banned)
+					if found then
+						evolve:GetProperty(steamid, "Nick", "<Unknown>", function(nick)
+							if banned then
+								evolve:UnBan(steamid, ply:SteamID())
+								evolve:Notify( evolve.colors.blue, ply:Nick(), color_white, " has unbanned ", evolve.colors.red, nick, color_white, "." )
+							else
+								evolve:Notify( ply, evolve.colors.red, nick .. " is not currently banned." )
+							end
+						end)
+					else
+						evolve:Notify( ply, evolve.colors.red, "No matching players found!" )
+					end
+				end)
+
 			else
-				evolve:Notify( ply, evolve.colors.red, "No matching players found!" )
+				evolve:Notify( ply, evolve.colors.red, "Invalid SteamID!")
 			end
 		else
-			evolve:Notify( ply, evolve.colors.red, "You need to specify a SteamID or nickname!" )
+			evolve:Notify( ply, evolve.colors.red, "You need to specify a SteamID!" )
 		end
 	else
 		evolve:Notify( ply, evolve.colors.red, evolve.constants.notallowed )

@@ -32,7 +32,7 @@ sourcebans.SetConfig( "serverid", 1 )
 sourcebans.Activate()
 
 local function syncBans()
-	for uid, _ in pairs( evolve.PlayerInfo ) do
+	--[[for uid, _ in pairs( evolve.PlayerInfo ) do
 		evolve:SetProperty( uid, "BanEnd", nil )
 		evolve:SetProperty( uid, "BanReason", nil )
 		evolve:SetProperty( uid, "BanAdmin", nil )
@@ -64,8 +64,7 @@ local function syncBans()
 				end
 			end
 		end
-	end )
-	evolve:CommitProperties()
+	end )]]--
 end
 timer.Create( "EV_SourceBansSync", 300, 0, syncBans )
 timer.Simple( 1, syncBans )

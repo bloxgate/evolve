@@ -43,7 +43,7 @@ local function syncBans()
 			else
 				admin = util.SteamIDFrom64(ban.AdminID)
 			end
-			local query = evolve.database:query("UPDATE evolve SET BanReason = "..sql.SQLStr(ban.BanReason)..", BanEnd = "..ban.End..", BanAdmin = "..admin.." WHERE SteamID64 = "..steamid64.." LIMIT 1;")
+			local query = evolve.database:query("UPDATE evolve SET BanReason = "..sql.SQLStr(ban.BanReason)..", BanEnd = "..ban.BanEnd..", BanAdmin = "..admin.." WHERE SteamID64 = "..steamid64.." LIMIT 1;")
 			query:start()
 		end
 	end )

@@ -58,11 +58,11 @@ end
 
 if ( SERVER ) then
 	evolve.SilentNotify = false
-	
+
 	function evolve:Notify( ... )
 		local ply
 		local arg = { ... }
-		
+
 		if ( type( arg[1] ) == "Player" or arg[1] == NULL ) then ply = arg[1] end
 		if ( arg[1] == evolve.admins ) then
 			for _, pl in ipairs( player.GetAll() ) do
@@ -73,7 +73,7 @@ if ( SERVER ) then
 			end
 			return
 		end
-		
+
 		if ( ply != NULL and !self.SilentNotify ) then
 			net.Start( "EV_Notification" )
 				net.WriteUInt( #arg, 16 )
@@ -95,12 +95,12 @@ if ( SERVER ) then
 				net.Broadcast()
 			end
 		end
-		
+
 		local str = ""
 		for _, v in ipairs( arg ) do
 			if ( type( v ) == "string" ) then str = str .. v end
 		end
-		
+
 		if ( ply ) then
 			print( "[EV] " .. ply:Nick() .. " -> " .. str )
 			evolve:Log( evolve:PlayerLogStr( ply ) .. " -> " .. str )
@@ -112,15 +112,15 @@ if ( SERVER ) then
 else
 	function evolve:Notify( ... )
 		local arg = { ... }
-		
+
 		args = {}
 		for _, v in ipairs( arg ) do
 			if ( type( v ) == "string" or type( v ) == "table" ) then table.insert( args, v ) end
 		end
-		
+
 		chat.AddText( unpack( args ) )
 	end
-	
+
 	net.Receive( "EV_Notification", function( length )
 		local argc = net.ReadUInt(16)
 		local args = {}
@@ -131,7 +131,7 @@ else
 				table.insert( args, net.ReadString() )
 			end
 		end
-		
+
 		chat.AddText( unpack( args ) )
 	end )
 end
@@ -200,14 +200,14 @@ end
 	Plugin management
 -------------------------------------------------------------------------------------------------------------------------*/
 
-function evolve:LoadPlugins()	
+function evolve:LoadPlugins()
 	evolve.plugins = {}
-	
+
 	local plugins,_ = file.Find( "ev_plugins/*.lua", "LUA" )
 	for _, plugin in ipairs( plugins ) do
 		local prefix = string.Left( plugin, string.find( plugin, "_" ) - 1 )
 		evolve.pluginFile = plugin
-		
+
 		if ( CLIENT and ( prefix == "sh" or prefix == "cl" ) ) then
 			include( "ev_plugins/" .. plugin )
 		elseif ( SERVER ) then
@@ -268,11 +268,11 @@ end
 if ( !evolve.HookCall ) then evolve.HookCall = hook.Call end
 hook.Call = function( name, gm, ... )
 	local arg = { ... }
-	
+
 	for _, plugin in ipairs( evolve.plugins ) do
-		if ( plugin[ name ] ) then			
+		if ( plugin[ name ] ) then
 			local retValues = { pcall( plugin[name], plugin, ... ) }
-			
+
 			if ( retValues[1] and retValues[2] != nil ) then
 				table.remove( retValues, 1 )
 				return unpack( retValues )
@@ -282,12 +282,12 @@ hook.Call = function( name, gm, ... )
 			end
 		end
 	end
-	
+
 	if ( CLIENT ) then
 		for _, tab in ipairs( evolve.MENU.Tabs ) do
-			if ( tab[ name ] ) then			
+			if ( tab[ name ] ) then
 				local retValues = { pcall( tab[name], tab, ... ) }
-				
+
 				if ( retValues[1] and retValues[2] != nil ) then
 					table.remove( retValues, 1 )
 					return unpack( retValues )
@@ -298,7 +298,7 @@ hook.Call = function( name, gm, ... )
 			end
 		end
 	end
-	
+
 	return evolve.HookCall( name, gm, ... )
 end
 
@@ -324,7 +324,7 @@ end
 
 function evolve:FindPlayer( name, def, nonum, noimmunity )
 	local matches = {}
-	
+
 	if ( !name or #name == 0 ) then
 		matches[1] = def
 	else
@@ -333,14 +333,14 @@ function evolve:FindPlayer( name, def, nonum, noimmunity )
 		if ( nonum ) then
 			if ( #name2 > 1 and tonumber( name2[ #name2 ] ) ) then table.remove( name2, #name2 ) end
 		end
-		
+
 		for _, ply in ipairs( player.GetAll() ) do
 			for _, pm in ipairs( name2 ) do
 				if ( evolve:IsNameMatch( ply, pm ) and !table.HasValue( matches, ply ) and ( noimmunity or !def or def:EV_BetterThanOrEqual( ply ) ) ) then table.insert( matches, ply ) end
 			end
 		end
 	end
-	
+
 	return matches
 end
 
@@ -348,7 +348,7 @@ function evolve:CreatePlayerList( tbl, notall )
 	local lst = ""
 	local lword = "and"
 	if ( notall ) then lword = "or" end
-	
+
 	if ( #tbl == 1 ) then
 		lst = tbl[1]:Nick()
 	elseif ( #tbl == #player.GetAll() ) then
@@ -358,7 +358,7 @@ function evolve:CreatePlayerList( tbl, notall )
 			if ( i == #tbl ) then lst = lst .. " " .. lword .. " " .. tbl[i]:Nick() elseif ( i == 1 ) then lst = tbl[i]:Nick() else lst = lst .. ", " .. tbl[i]:Nick() end
 		end
 	end
-	
+
 	return lst
 end
 
@@ -391,7 +391,7 @@ function _R.Player:EV_IsRank( rank )
 end
 
 function _R.Player:IsAdmin()
-	if self:EV_GetRank() == "admin" or self:EV_GetRank() == "superadmin" or self:EV_GetRank() == "owner" then return true 
+	if self:EV_GetRank() == "admin" or self:EV_GetRank() == "superadmin" or self:EV_GetRank() == "owner" then return true
 	else
 	return false
 	end
@@ -431,7 +431,7 @@ function evolve:MySQLConnect()
 			BanAdmin BIGINT,
 			PRIMARY KEY(id))
 		]])
-		self.database:Query("SET SESSION wait_timeout = 999999;") 
+		self.database:Query("SET SESSION wait_timeout = 999999;")
 		//create_table:start()
 		//prevent_timeout:start()
 	/*self.database.onConnectionFailed = function(db, e)
@@ -536,7 +536,7 @@ function _R.Player:SetProperty(id, value)
 	evolve:UpdateProperty(steamid64, id, value)
 end
 
-function evolve:SteamIDByProperty(property, value, callback)	
+function evolve:SteamIDByProperty(property, value, callback)
 	self.database:Query("SELECT SteamID64 FROM evolve WHERE "..property.." = "..self:GetSecureValue(value).." LIMIT 1;", callback)
 	/*Query.callback = callback
 	Query.onSuccess = function(Query)
@@ -641,11 +641,11 @@ end
 
 function _R.Player:EV_SetRank( rank )
 	self:SetProperty( "Rank", rank )
-	
+
 	self:SetNWString( "EV_UserGroup", rank )
-	
+
 	evolve:RankGroup( self, rank )
-	
+
 	if ( self:EV_HasPrivilege( "Ban menu" ) ) then
 		evolve:SyncBans( self )
 	end
@@ -654,15 +654,15 @@ end
 function _R.Player:EV_GetRank()
 	if ( !self:IsValid() ) then return false end
 	if ( SERVER and self:IsListenServerHost() ) then return "owner" end
-	
+
 	local rank
-	
+
 	if ( SERVER ) then
 		rank = self:GetProperty( "Rank", "guest" )
 	else
 		rank = self:GetNWString( "EV_UserGroup", "guest" )
 	end
-	
+
 	if ( evolve.ranks[ rank ] ) then
 		return rank
 	else
@@ -686,16 +686,16 @@ end
 
 function evolve:Rank( ply )
 	if ( !ply:IsValid() ) then return end
-	
+
 	self:TransferPrivileges( ply )
 	self:TransferRanks( ply )
-	
+
 	if ( ply:IsListenServerHost() ) then ply:SetNWString( "EV_UserGroup", "owner" ) ply:SetNWString( "UserGroup", "superadmin" ) return end
-	
+
 	local usergroup = ply:GetNWString( "UserGroup", "guest" )
 	if ( usergroup == "user" ) then usergroup = "guest" end
 	ply:SetNWString( "EV_UserGroup", usergroup )
-	
+
 	local rank = ply:GetProperty( "Rank" )
 	if ( rank and evolve.ranks[ rank ] ) then
 		ply:SetNWString( "EV_UserGroup", rank )
@@ -706,35 +706,35 @@ function evolve:Rank( ply )
 			for _, ranks in ipairs( evolve.compatibilityRanks ) do
 				if ( ranks.steamID == ply:SteamID() ) then
 					rank = ranks.rank
-					
+
 					ply:SetNWString( "EV_UserGroup", rank )
 					usergroup = rank
-					
+
 					ply:SetProperty( "Rank", rank )
-					
+
 					break
 				end
 			end
 		end
 		// COMPATIBILITY
 	end
-	
+
 	if ( ply:EV_HasPrivilege( "Ban menu" ) ) then
 		evolve:SyncBans( ply )
 	end
-	
+
 	evolve:RankGroup( ply, usergroup )
 end
 
 hook.Add( "PlayerSpawn", "EV_RankHook", function( ply )
 	if ( !ply.EV_Ranked ) then
 		ply:SetNWString( "EV_UserGroup", ply:GetProperty( "Rank", "guest" ) )
-		
+
 		timer.Simple( 1, function()
 			evolve:Rank( ply )
 		end )
 		ply.EV_Ranked = true
-		
+
 		ply:SetNWInt( "EV_JoinTime", os.time() )
 		ply:SetNWInt( "EV_PlayTime", ply:GetProperty( "PlayTime" ) or 0 )
 		net.Start("EV_TimeSync")
@@ -776,7 +776,7 @@ if SERVER then
 			include( "ev_defaultranks.lua" )
 			evolve:SaveRanks()
 		end
-		
+
 		-- Add resources
 		for _,rank in pairs(evolve.ranks) do
 			if rank.Icon and rank.Icon ~= "" then
@@ -793,7 +793,7 @@ end
 
 function evolve:TransferPrivileges( ply )
 	if ( !ply:IsValid() ) then return end
-	
+
 	for id, privilege in ipairs( evolve.privileges ) do
 		net.Start( "EV_Privilege" )
 			net.WriteInt( id, 16 )
@@ -804,17 +804,17 @@ end
 
 function evolve:TransferRank( ply, rank )
 	if ( !ply:IsValid() ) then return end
-	
+
 	local data = evolve.ranks[ rank ]
 	local color = data.Color
-	
-	net.Start( "EV_Rank" )			
+
+	net.Start( "EV_Rank" )
 		net.WriteString( rank )
 		net.WriteString( data.Title )
 		net.WriteString( data.Icon )
 		net.WriteString( data.UserGroup )
 		net.WriteUInt( data.Immunity, 8 )
-		
+
 		if ( color ) then
 			net.WriteBit( true )
 			net.WriteUInt( color.r, 8 )
@@ -824,17 +824,17 @@ function evolve:TransferRank( ply, rank )
 			net.WriteBit( false )
 		end
 	net.Send(ply)
-	
+
 	local privs = #( data.Privileges or {} )
 	local count
-	
+
 	for i = 1, privs, 100 do
 		count = math.min( privs, i + 99 ) - i
-		
+
 		net.Start( "EV_RankPrivileges")
 			net.WriteString( rank )
 			net.WriteInt( count + 1, 16 )
-			
+
 			for ii = i, i + count do
 				net.WriteInt( evolve:KeyByValue( evolve.privileges, data.Privileges[ii], ipairs ) or 0, 16 )
 			end
@@ -853,7 +853,7 @@ if CLIENT then
 		local id = string.lower( net.ReadString() )
 		local title = net.ReadString()
 		local created = evolve.ranks[id] == nil
-	
+
 		evolve.ranks[id] = {
 			Title = title,
 			Icon = net.ReadString(),
@@ -861,13 +861,13 @@ if CLIENT then
 			Immunity = net.ReadUInt(8),
 			Privileges = {},
 		}
-	
+
 		if ( net.ReadBit() == 1 ) then
 			evolve.ranks[id].Color = Color( net.ReadUInt(8), net.ReadUInt(8), net.ReadUInt(8) )
 		end
-	
+
 		evolve.ranks[id].IconTexture = Material( "icon16/" .. evolve.ranks[id].Icon .. ".png" )
-	
+
 		if ( created ) then
 			hook.Call( "EV_RankCreated", nil, id )
 		else
@@ -885,7 +885,7 @@ if CLIENT then
 	net.Receive( "EV_RankPrivileges", function( length )
 		local rank = net.ReadString()
 		local privilegeCount = net.ReadInt(16)
-	
+
 		for i = 1, privilegeCount do
 			table.insert( evolve.ranks[ rank ].Privileges, evolve.privileges[ net.ReadInt(16) ] )
 		end
@@ -900,7 +900,7 @@ if CLIENT then
 	net.Receive( "EV_RenameRank", function( length )
 		local rank = net.ReadString():lower()
 		evolve.ranks[ rank ].Title = net.ReadString()
-	
+
 		hook.Call( "EV_RankRenamed", nil, rank, evolve.ranks[ rank ].Title )
 	end )
 
@@ -908,13 +908,13 @@ if CLIENT then
 		local rank = net.ReadString()
 		local priv = evolve.privileges[ net.ReadInt(16) ]
 		local enabled = net.ReadBit() == 1
-	
+
 		if ( enabled ) then
 			table.insert( evolve.ranks[ rank ].Privileges, priv )
 		else
 			table.remove( evolve.ranks[ rank ].Privileges, evolve:KeyByValue( evolve.ranks[ rank ].Privileges, priv ) )
 		end
-	
+
 		hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, enabled )
 	end )
 
@@ -922,17 +922,17 @@ if CLIENT then
 		local rank = net.ReadString()
 		local enabled = net.ReadBit() == 1
 		local filter = net.ReadString()
-	
+
 		if ( enabled ) then
 			for _, priv in ipairs( evolve.privileges ) do
-				if ( ( ( #filter == 0 and !string.match( priv, "[@:#]" ) ) or string.Left( priv, 1 ) == filter ) and !table.HasValue( evolve.ranks[rank].Privileges, priv ) ) then				
+				if ( ( ( #filter == 0 and !string.match( priv, "[@:#]" ) ) or string.Left( priv, 1 ) == filter ) and !table.HasValue( evolve.ranks[rank].Privileges, priv ) ) then
 					hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, true )
 					table.insert( evolve.ranks[ rank ].Privileges, priv )
 				end
 			end
 		else
 			local i = 1
-		
+
 			while ( i <= #evolve.ranks[rank].Privileges ) do
 				if ( ( #filter == 0 and !string.match( evolve.ranks[rank].Privileges[i], "[@:#]" ) ) or string.Left( evolve.ranks[rank].Privileges[i], 1 ) == filter ) then
 					hook.Call( "EV_RankPrivilegeChange", nil, rank, evolve.ranks[rank].Privileges[i], false )
@@ -954,10 +954,10 @@ if ( SERVER ) then
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
 			if ( #args > 1 and evolve.ranks[ args[1] ] ) then
 				evolve:Notify( evolve.colors.red, ply:Nick(), evolve.colors.white, " has renamed ", evolve.colors.blue, evolve.ranks[ args[1] ].Title, evolve.colors.white, " to ", evolve.colors.blue, table.concat( args, " ", 2 ), evolve.colors.white, "." )
-				
+
 				evolve.ranks[ args[1] ].Title = table.concat( args, " ", 2 )
 				evolve:SaveRanks()
-				
+
 				net.Start( "EV_RenameRank" )
 					net.WriteString( args[1] )
 					net.WriteString( evolve.ranks[ args[1] ].Title )
@@ -965,13 +965,13 @@ if ( SERVER ) then
 			end
 		end
 	end )
-	
+
 	concommand.Add( "ev_setrank", function( ply, com, args )
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
 			if ( #args == 3 and args[1] != "owner" and evolve.ranks[ args[1] ] and table.HasValue( evolve.privileges, args[2] ) and tonumber( args[3] ) ) then
 				local rank = args[1]
 				local privilege = args[2]
-				
+
 				if ( tonumber( args[3] ) == 1 ) then
 					if ( !table.HasValue( evolve.ranks[ rank ].Privileges, privilege ) ) then
 						table.insert( evolve.ranks[ rank ].Privileges, privilege )
@@ -999,9 +999,9 @@ if ( SERVER ) then
 						end
 					end
 				end
-				
+
 				evolve:SaveRanks()
-				
+
 				net.Start( "EV_RankPrivilege" )
 					net.WriteString( rank )
 					net.WriteInt( evolve:KeyByValue( evolve.privileges, privilege ), 16 )
@@ -1009,8 +1009,8 @@ if ( SERVER ) then
 				net.Broadcast()
 			elseif ( #args >= 2 and evolve.ranks[ args[1] ] and tonumber( args[2] ) and ( !args[3] or #args[3] == 1 ) ) then
 				local rank = args[1]
-				
-				if ( tonumber( args[2] ) == 1 ) then					
+
+				if ( tonumber( args[2] ) == 1 ) then
 					for _, priv in ipairs( evolve.privileges ) do
 						if ( ( ( !args[3] and !string.match( priv, "[@:#]" ) ) or string.Left( priv, 1 ) == args[3] ) and !table.HasValue( evolve.ranks[ rank ].Privileges, priv ) ) then
 							table.insert( evolve.ranks[ rank ].Privileges, priv )
@@ -1018,7 +1018,7 @@ if ( SERVER ) then
 					end
 				else
 					local i = 1
-					
+
 					while ( i <= #evolve.ranks[rank].Privileges ) do
 						if ( ( !args[3] and !string.match( evolve.ranks[rank].Privileges[i], "[@:#]" ) ) or string.Left( evolve.ranks[rank].Privileges[i], 1 ) == args[3] ) then
 							table.remove( evolve.ranks[rank].Privileges, i )
@@ -1027,9 +1027,9 @@ if ( SERVER ) then
 						end
 					end
 				end
-				
+
 				evolve:SaveRanks()
-				
+
 				net.Start( "EV_RankPrivilegeAll" )
 					net.WriteString( rank )
 					net.WriteBit( tonumber( args[2] ) == 1 )
@@ -1038,21 +1038,21 @@ if ( SERVER ) then
 			end
 		end
 	end )
-	
+
 	concommand.Add( "ev_setrankp", function( ply, com, args )
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
-			if ( #args == 6 and tonumber( args[2] ) and evolve.ranks[ args[1] ] and ( args[3] == "guest" or args[3] == "admin" or args[3] == "superadmin" ) and tonumber( args[4] ) and tonumber( args[5] ) and tonumber( args[6] ) ) then						
+			if ( #args == 6 and tonumber( args[2] ) and evolve.ranks[ args[1] ] and ( args[3] == "guest" or args[3] == "admin" or args[3] == "superadmin" ) and tonumber( args[4] ) and tonumber( args[5] ) and tonumber( args[6] ) ) then
 				if ( args[1] != "owner" ) then
 					evolve.ranks[ args[1] ].Immunity = tonumber( args[2] )
 					evolve.ranks[ args[1] ].UserGroup = args[3]
 				end
-				
+
 				evolve.ranks[ args[1] ].Color = Color( args[4], args[5], args[6] )
 				evolve:SaveRanks()
-				
+
 				for _, pl in ipairs( player.GetAll() ) do
 						evolve:TransferRank( pl, args[1] )
-						
+
 						if ( args[1] != "owner" and pl:EV_GetRank() == args[1] ) then
 							pl:SetNWString( "UserGroup", args[3] )
 						end
@@ -1060,28 +1060,28 @@ if ( SERVER ) then
 			end
 		end
 	end )
-	
+
 	concommand.Add( "ev_removerank", function( ply, com, args )
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
 			if ( args[1] != "guest" and args[1] != "owner" and evolve.ranks[ args[1] ] ) then
 				evolve:Notify( evolve.colors.red, ply:Nick(), evolve.colors.white, " has removed the rank ", evolve.colors.blue, evolve.ranks[ args[1] ].Title, evolve.colors.white, "." )
-				
+
 				evolve.ranks[ args[1] ] = nil
 				evolve:SaveRanks()
-				
+
 				for _, pl in ipairs( player.GetAll() ) do
 					if ( pl:EV_GetRank() == args[1] ) then
 						pl:EV_SetRank( "guest" )
 					end
 				end
-				
+
 				net.Start( "EV_RemoveRank" )
 					net.WriteString( args[1] )
 				net.Broadcast()
 			end
 		end
 	end )
-	
+
 	concommand.Add( "ev_createrank", function( ply, com, args )
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
 			if ( ( #args == 2 or #args == 3 ) and !string.find( args[1], " " ) and string.lower( args[1] ) == args[1] and !evolve.ranks[ args[1] ] ) then
@@ -1095,7 +1095,7 @@ if ( SERVER ) then
 					}
 				elseif ( #args == 3 and evolve.ranks[ args[3] ] ) then
 					local parent = evolve.ranks[ args[3] ]
-					
+
 					evolve.ranks[ args[1] ] = {
 						Title = args[2],
 						Icon = parent.Icon,
@@ -1104,10 +1104,10 @@ if ( SERVER ) then
 						Privileges = table.Copy( parent.Privileges ),
 					}
 				end
-				
+
 				evolve:SaveRanks()
 				evolve:SyncRanks()
-				
+
 				evolve:Notify( evolve.colors.red, ply:Nick(), evolve.colors.white, " has created the rank ", evolve.colors.blue, args[2], evolve.colors.white, "." )
 			end
 		end
@@ -1120,14 +1120,14 @@ end
 
 function evolve:GetBySteamID64(steamid64)
 	for k,v in pairs(player.GetAll()) do
-		if v:SteamID64() == steamid64 then 
+		if v:SteamID64() == steamid64 then
 			return v
 		end
 	end
 end
 
 if ( SERVER ) then
-	
+
 	function evolve:SyncBans( ply )
 		evolve.database:Query("SELECT Nick,SteamID64,BanReason,BanEnd,BanAdmin FROM evolve WHERE BanEnd > "..os.time().." OR BanEnd = 0", onSuccess)
 		//Query.onSuccess = function(sqlq)
@@ -1135,14 +1135,14 @@ if ( SERVER ) then
 			//local data = Query:getData()
 			SQLQG = sqlq
 			for k,v in pairs(sqlq) do
-				local _time = tonumber(v["data"].BanEnd - tonumber(os.time()))
-				if v["data"].BanEnd == 0 then _time = 0 end
+				local _time = tonumber(sqlq[1].data[k].BanEnd - tonumber(os.time()))
+				if sqlq[1].data[k].BanEnd == 0 then _time = 0 end
 				evolve:GetProperty(v["data"].BanAdmin, "Nick", "Console", function(admin)
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(uniqueid))
-					net.WriteString(v.data["Nick"])
-					net.WriteString(util.SteamIDFrom64(v["data"].SteamID64))
-					net.WriteString(v["data"].BanReason)
+					net.WriteString(sqlq[1].data[k].Nick)
+					net.WriteString(util.SteamIDFrom64(sqlq[1].data[k].SteamID64))
+					net.WriteString(sqlq[1].data[k].BanReason)
 					net.WriteString(admin)
 					net.WriteUInt(_time, 32)
 					if ply == nil then
@@ -1152,7 +1152,7 @@ if ( SERVER ) then
 					end
 					//print("Found existing ban for: "..v.Nick)
 					game.ConsoleCommand( "banid " .. _time / 60 .. " " .. util.SteamIDFrom64(v.SteamID64) .. "\n" )
-					
+
 				end)
 			end
 		end
@@ -1161,8 +1161,8 @@ if ( SERVER ) then
 		end
 		Query:start()*/
 	end
-	
-	function evolve:Ban( uid, length, reason, adminuid )		
+
+	function evolve:Ban( uid, length, reason, adminuid )
 		if ( length == 0 ) then
 			evolve:SetProperty( uid, "BanEnd", 0 )
 		else
@@ -1170,7 +1170,7 @@ if ( SERVER ) then
 		end
 		evolve:SetProperty( uid, "BanReason", reason )
 		evolve:SetProperty( uid, "BanAdmin", adminuid )
-		
+
 		evolve:GetProperty(uid, "Nick", nil, function(nick)
 			local a = "Console"
 			if ( adminuid == "0") then
@@ -1184,7 +1184,7 @@ if ( SERVER ) then
 				net.WriteString(a)
 				net.WriteUInt(length, 32)
 			net.Broadcast()
-		
+
 			-- Let SourceBans do the kicking or Evolve
 			if ( sourcebans ) then
 				local admin
@@ -1197,7 +1197,7 @@ if ( SERVER ) then
 				if ( uid != 0 ) then pl = evolve:GetBySteamID64(uid) end
 				if IsValid(pl) then
 					game.ConsoleCommand( "banid " .. length / 60 .. " " .. pl:SteamID() .. "\n" )
-				
+
 					if ( length < 0 ) then
 						pl:Kick( "Permabanned! (" .. reason .. ")" )
 					else
@@ -1210,29 +1210,29 @@ if ( SERVER ) then
 				end
 			end
 		end)
-		
+
 	end
-	
-	function evolve:UnBan( uid, adminuid )		
+
+	function evolve:UnBan( uid, adminuid )
 		evolve:SetProperty( uid, "BanEnd", nil )
 		evolve:SetProperty( uid, "BanReason", nil )
 		evolve:SetProperty( uid, "BanAdmin", nil )
-		
+
 		net.Start("EV_RemoveBanEntry")
 			net.WriteString(tostring(uid))
 		net.Broadcast()
-		
+
 		if ( sourcebans ) then
 			local admin
 			if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
-			
+
 			sourcebans.UnbanPlayerBySteamID(util.SteamIDFrom64(uid), "No reason specified.", admin)
 		else
 			/*game.ConsoleCommand( "removeip \"" .. ( evolve:GetProperty( uid, "IPAddress" ) or "" ) .. "\"\n" )
 			game.ConsoleCommand( "removeid " .. evolve:GetProperty( uid, "SteamID" ) .. "\n" )*/
 		end
 	end
-	
+
 	function evolve:IsBanned(steamid64, callback)
 		evolve:GetProperty(steamid64, "BanEnd", nil, function(banEnd)
 			print("BanEnd: "..banEnd)
@@ -1242,7 +1242,7 @@ if ( SERVER ) then
 				if banEnd and banEnd > 0 and os.time() > banEnd then
 					evolve:UnBan( uid )
 					callback(true, false)
-				end	
+				end
 				callback(true, banEnd and ( banEnd > os.time() or banEnd == 0 ))
 			end
 		end)
@@ -1250,7 +1250,7 @@ if ( SERVER ) then
 else
 	net.Receive( "EV_BanEntry", function( length )
 		if ( !evolve.bans ) then evolve.bans = {} end
-		
+
 		local id = net.ReadString()
 		evolve.bans[id] =  {
 			Nick = net.ReadString(),
@@ -1258,20 +1258,20 @@ else
 			Reason = net.ReadString(),
 			Admin = net.ReadString()
 		}
-		
+
 		local time = net.ReadInt(32)
 		if ( time > 0 ) then
 			evolve.bans[id].End = time + os.time()
 		else
 			evolve.bans[id].End = 0
 		end
-		
-		hook.Call( "EV_BanAdded", nil, id )		
+
+		hook.Call( "EV_BanAdded", nil, id )
 	end )
-	
+
 	net.Receive( "EV_RemoveBanEntry", function( length )
 		if ( !evolve.bans ) then return end
-		
+
 		local id = net.ReadString()
 		hook.Call( "EV_BanRemoved", nil, id )
 		evolve.bans[id] = nil
@@ -1315,17 +1315,17 @@ file.CreateDir("ev_logs/")
 
 function evolve:Log( str )
 	if ( CLIENT ) then return end
-	
+
 	local logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. ".txt"
 	local files = file.Find( "ev_logs/" .. os.date( "%d-%m-%Y" ) .. "*.txt", "DATA" )
 	table.sort( files )
 	if ( #files > 0 ) then logFile = "ev_logs/" .. files[math.max(#files-1,1)] end
-	
+
 	local src = file.Read( logFile, "DATA" ) or ""
 	if ( #src > 200 * 1024 ) then
 		logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. " (" .. #files + 1 .. ").txt"
 	end
-	
+
 	file.Append( logFile, "[" .. os.date() .. "] " .. str .. "\n" )
 	print("[" .. os.date() .. "] " .. str)
 end

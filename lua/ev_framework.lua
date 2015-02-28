@@ -391,7 +391,7 @@ function _R.Player:EV_IsRank( rank )
 end
 
 function _R.Player:IsAdmin()
-	if self:EV_GetRank() == "admin" or self:EV_GetRank() == "superadmin" or self:EV_GetRank() == "owner" then return true
+	if self:EV_GetRank() == "admin" or self:EV_GetRank() == "superadmin" or self:EV_GetRank() == "owner" or self:EV_GetRAnk() == "co-owner" then return true
 	else
 	return false
 	end

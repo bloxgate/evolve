@@ -272,7 +272,7 @@ hook.Call = function( name, gm, ... )
 	for _, plugin in ipairs( evolve.plugins ) do
 		if ( plugin[ name ] ) then
 
-			local function errorFunc(retValues){
+			local function errorFunc(retValues)
 				evolve:Notify( evolve.colors.red, "Hook '" .. name .. "' in plugin '" .. plugin.Title .. "' failed with error:" )
 				evolve:Notify( evolve.colors.red, retValues[2] )
 			end
@@ -289,14 +289,18 @@ hook.Call = function( name, gm, ... )
 	if ( CLIENT ) then
 		for _, tab in ipairs( evolve.MENU.Tabs ) do
 			if ( tab[ name ] ) then
-				local retValues = { pcall( tab[name], tab, ... ) }
 
-				if ( retValues[1] and retValues[2] != nil ) then
-					table.remove( retValues, 1 )
-					return unpack( retValues )
-				elseif ( !retValues[1] ) then
+				local function errorFunc(retValues)
 					evolve:Notify( evolve.colors.red, "Hook '" .. name .. "' in tab '" .. tab.Title .. "' failed with error:" )
 					evolve:Notify( evolve.colors.red, retValues[2] )
+				end
+
+
+				local success, retValues = { xpcall( tab[name], errorFunc, tab, ... ) }
+
+				if ( success ) then
+					table.remove( retValues, 1 )
+					return unpack( retValues )
 				end
 			end
 		end

@@ -277,9 +277,9 @@ hook.Call = function( name, gm, ... )
 				evolve:Notify( evolve.colors.red, retValues[2] )
 			end
 
-			local success, retValues = xpcall( plugin[name], errorFunc, plugin, ... )
+			local retValues = {xpcall( plugin[name], errorFunc, plugin, ... )}
 
-			if ( success ) then
+			if ( retValues[1] ) then
 				table.remove( retValues, 1 )
 				return unpack( retValues )
 			end
@@ -296,9 +296,9 @@ hook.Call = function( name, gm, ... )
 				end
 
 
-				local success, retValues = xpcall( tab[name], errorFunc, tab, ... )
+				local retValues = {xpcall( tab[name], errorFunc, tab, ... )}
 
-				if ( success ) then
+				if ( retValues[1] ) then
 					table.remove( retValues, 1 )
 					return unpack( retValues )
 				end

@@ -2,7 +2,7 @@
 	Serverside autorun file
 -------------------------------------------------------------------------------------------------------------------------*/
 
-require("mysqloo")
+require("tmysql4")
 
 // Set up Evolve table
 evolve = {}

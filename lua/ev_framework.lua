@@ -269,6 +269,8 @@ if ( !evolve.HookCall ) then evolve.HookCall = hook.Call end
 hook.Call = function( name, gm, ... )
 	local arg = { ... }
 
+	if name == "Think" then return evolve.HookCall(name, gm, ...) end
+	
 	for _, plugin in ipairs( evolve.plugins ) do
 		if ( plugin[ name ] ) then
 
@@ -279,7 +281,7 @@ hook.Call = function( name, gm, ... )
 
 			local retValues = {xpcall( plugin[name], errorFunc, plugin, ... )}
 
-			if ( retValues[1] ) then
+			if ( retValues[1] and retValues[2] != nil ) then
 				table.remove( retValues, 1 )
 				return unpack( retValues )
 			end
@@ -298,7 +300,7 @@ hook.Call = function( name, gm, ... )
 
 				local retValues = {xpcall( tab[name], errorFunc, tab, ... )}
 
-				if ( retValues[1] ) then
+				if ( retValues[1] and retValues[2] !=nil ) then
 					table.remove( retValues, 1 )
 					return unpack( retValues )
 				end

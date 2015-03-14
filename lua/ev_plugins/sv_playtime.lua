@@ -12,8 +12,9 @@ PLUGIN.Usage = "[player]"
 function PLUGIN:Call( ply, args )
 	local uid, pl
 	if ( string.match( args[1] or "", "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then
-		uid = evolve:UniqueIDByProperty( "SteamID", args[1] )
+		uid = evolve:UniqueIDBySteamID( args[1] )
 		pl = player.GetByUniqueID( uid )
+		sid64 = pl:SteamID64()
 	else
 		pl = evolve:FindPlayer( args[1], ply )
 		
@@ -28,11 +29,14 @@ function PLUGIN:Call( ply, args )
 			return
 		else
 			pl = pl[1]
-			uid = pl:UniqueID()
+			sid64 = pl:SteamID64()
 		end
 	end
 	
-	local time = evolve:GetProperty( uid, "PlayTime" )
+	local time = 0
+	evolve:GetProperty(sid64, "Playtime", 0, function(timeData)
+		time = timeData[1].data[1].Playtime or timeData
+	end)
 	if ( pl and pl:IsValid() ) then
 		time = time + os.clock() - pl.EV_LastPlaytimeSave
 		evolve:Notify( ply, evolve.colors.blue, evolve:GetProperty( uid, "Nick" ), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server, with ", evolve.colors.red, evolve:FormatTime( pl:TimeConnected() ), evolve.colors.white, " this session." )

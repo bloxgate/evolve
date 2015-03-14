@@ -554,6 +554,14 @@ function evolve:SteamIDByProperty(property, value, callback)
 	Query:start()*/
 end
 
+function evolve:UniqueIDBySteamID(sid)
+	for k, v in pairs(player.GetAll()) do
+		if v:SteamID() = sid then
+			return v:UniqueID()
+		end
+	end
+end
+
 function evolve:GetProperty(steamid64, id, defaultvalue, callback)
 	steamid64 = tostring(steamid64)
 	if evolve.PlayerInfo[steamid64] then

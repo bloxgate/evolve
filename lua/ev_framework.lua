@@ -556,7 +556,7 @@ end
 
 function evolve:UniqueIDBySteamID(sid)
 	for k, v in pairs(player.GetAll()) do
-		if (v:SteamID() = sid) then
+		if (v:SteamID() == sid) then
 			return v:UniqueID()
 		end
 	end

@@ -501,9 +501,9 @@ hook.Add("PlayerInitialSpawn", "Evolve_MySQL", evolve.PlayerInitialSpawn_MySQL)
 
 if SERVER then
 	function evolve:LoadPlayerInfo()
-		if ( file.Exists( "ev_playerinfo.txt", "DATA" ) ) then
+		if ( file.Exists( "ev_pon_playerinfo.txt", "DATA" ) ) then
 			debug.sethook()
-			self.PlayerInfo = von.deserialize( file.Read( "ev_playerinfo.txt", "DATA" ) )
+			self.PlayerInfo = pon.decode( file.Read( "ev_pon_playerinfo.txt", "DATA" ) )
 		else
 			self.PlayerInfo = {}
 		end
@@ -511,7 +511,7 @@ if SERVER then
 	evolve:LoadPlayerInfo()
 
 	function evolve:SavePlayerInfo()
-		file.Write( "ev_playerinfo.txt", von.serialize( self.PlayerInfo ) )
+		file.Write( "ev_pon_playerinfo.txt", pon.encode( self.PlayerInfo ) )
 	end
 end
 
@@ -783,12 +783,12 @@ end
 if SERVER then
 
 	function evolve:SaveRanks()
-		file.Write( "ev_userranks.txt", von.serialize( evolve.ranks ) )
+		file.Write( "ev_pon_userranks.txt", pon.encode( evolve.ranks ) )
 	end
 
 	function evolve:LoadRanks()
-		if ( file.Exists( "ev_userranks.txt", "DATA" ) ) then
-			evolve.ranks = von.deserialize( file.Read( "ev_userranks.txt", "DATA" ) )
+		if ( file.Exists( "ev_pon_userranks.txt", "DATA" ) ) then
+			evolve.ranks = pon.decode( file.Read( "ev_pon_userranks.txt", "DATA" ) )
 		else
 			include( "ev_defaultranks.lua" )
 			evolve:SaveRanks()
@@ -1301,12 +1301,12 @@ end
 
 if SERVER then
 	function evolve:SaveGlobalVars()
-		file.Write( "ev_globalvars.txt", von.serialize( evolve.globalvars ) )
+		file.Write( "ev_pon_globalvars.txt", pon.encode( evolve.globalvars ) )
 	end
 
 	function evolve:LoadGlobalVars()
-		if ( file.Exists( "ev_globalvars.txt", "DATA" ) ) then
-			evolve.globalvars = von.deserialize( file.Read( "ev_globalvars.txt", "DATA" ) )
+		if ( file.Exists( "ev_pon_globalvars.txt", "DATA" ) ) then
+			evolve.globalvars = pon.decode( file.Read( "ev_pon_globalvars.txt", "DATA" ) )
 		else
 			evolve.globalvars = {}
 			evolve:SaveGlobalVars()

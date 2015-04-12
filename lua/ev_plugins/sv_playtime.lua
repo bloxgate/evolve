@@ -9,6 +9,8 @@ PLUGIN.Author = "Overv"
 PLUGIN.ChatCommand = "playtime"
 PLUGIN.Usage = "[player]"
 
+local time = 0
+
 function PLUGIN:Call( ply, args )
 	local uid, pl
 	if ( string.match( args[1] or "", "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then
@@ -33,16 +35,25 @@ function PLUGIN:Call( ply, args )
 		end
 	end
 	
-	local time = 0
 	evolve:GetProperty(sid64, "Playtime", 0, function(timeData)
-		time = timeData[1].data[1].Playtime or timeData
+		time = timeData
 	end)
+	
 	if ( pl and pl:IsValid() ) then
-		time = time + os.clock() - pl.EV_LastPlaytimeSave
-		evolve:Notify( ply, evolve.colors.blue, evolve:GetProperty( uid, "Nick" ), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server, with ", evolve.colors.red, evolve:FormatTime( pl:TimeConnected() ), evolve.colors.white, " this session." )
+		time = time + os.clock() - 300
+		evolve:Notify( ply, evolve.colors.blue, pl:GetProperty( "Nick", "User"), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server, with ", evolve.colors.red, evolve:FormatTime( pl:TimeConnected() ), evolve.colors.white, " this session." )
 	else
-		evolve:Notify( ply, evolve.colors.blue, evolve:GetProperty( uid, "Nick" ), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server." )
+		evolve:Notify( ply, evolve.colors.blue, pl:GetProperty( "Nick", "User" ), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server." )
 	end
 end
+
+timer.Create("EV_PlayTimeSave", 300, 0, function()
+	for i, ply in pairs( player.GetAll() ) do
+		local ptime = 0
+		evolve:GetProperty(ply:SteamID64(), "Playtime", 0, function(retdata) ptime = retdata end)
+		evolve:SetProperty(ply:SteamID64(), "Playtime", ptime + 300)
+		//ply.EV_LastPlaytimeSave = os.clock()
+	end
+end)
 
 evolve:RegisterPlugin( PLUGIN )

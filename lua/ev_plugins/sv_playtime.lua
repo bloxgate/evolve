@@ -68,7 +68,7 @@ timer.Create( "EV_PlayTimeSave", 300, 0, function()
         ply.EV_LastPlaytimeSave = os.clock()
     end
     
-    evolve:CommitProperties()
+    //evolve:CommitProperties()
 end )
 
 evolve:RegisterPlugin( PLUGIN )

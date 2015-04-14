@@ -56,6 +56,7 @@ timer.Create( "EV_PlayTimeSave", 300, 0, function()
         
         ply:SetProperty( "LastJoin", os.time() )
         clock = os.clock()
+        last = ply.EV_LastPlaytimeSave or os.clock()
         
         -- When the clock flips negative/positive, we don't want large differences between the old clock value stored in last.
         if((clock < 0 && last > 0) || (clock > 0 && last < 0)) then 

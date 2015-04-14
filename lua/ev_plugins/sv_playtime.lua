@@ -40,20 +40,34 @@ function PLUGIN:Call( ply, args )
 	end)
 	
 	if ( pl and pl:IsValid() ) then
-		time = time + os.clock() - 300
+		time = time + os.clock() - pl.EV_LastPlaytimeSave
 		evolve:Notify( ply, evolve.colors.blue, pl:GetProperty( "Nick", "User"), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server, with ", evolve.colors.red, evolve:FormatTime( pl:TimeConnected() ), evolve.colors.white, " this session." )
 	else
 		evolve:Notify( ply, evolve.colors.blue, pl:GetProperty( "Nick", "User" ), evolve.colors.white, " has spent ", evolve.colors.red, evolve:FormatTime( time ), evolve.colors.white, " on this server." )
 	end
 end
 
-timer.Create("EV_PlayTimeSave", 300, 0, function()
-	for i, ply in pairs( player.GetAll() ) do
-		local ptime = 0
-		evolve:GetProperty(ply:SteamID64(), "Playtime", 0, function(retdata) ptime = retdata end)
-		evolve:SetProperty(ply:SteamID64(), "Playtime", ptime + 300)
-		//ply.EV_LastPlaytimeSave = os.clock()
-	end
-end)
+timer.Create( "EV_PlayTimeSave", 300, 0, function()
+	for _, ply in ipairs( player.GetAll() ) do
+        -- Check for bad PlayTime values and set them back to 0, usually only for catching new players spawning with negative values.
+        if(ply:GetProperty( "PlayTime" ) < 0) then
+          ply:SetProperty( "PlayTime", 0)
+        end
+        
+        ply:SetProperty( "LastJoin", os.time() )
+        clock = os.clock()
+        
+        -- When the clock flips negative/positive, we don't want large differences between the old clock value stored in last.
+        if((clock < 0 && last > 0) || (clock > 0 && last < 0)) then 
+          last = os.clock()
+        end
+        
+        -- Set the PlayTime value to the absoulte difference in clock times.
+        ply:SetProperty( "PlayTime", ply:GetProperty( "PlayTime" ) + math.abs(os.difftime(clock,last)) )
+        ply.EV_LastPlaytimeSave = os.clock()
+    end
+    
+    evolve:CommitProperties()
+end )
 
 evolve:RegisterPlugin( PLUGIN )

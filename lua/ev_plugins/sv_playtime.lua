@@ -64,7 +64,7 @@ timer.Create( "EV_PlayTimeSave", 300, 0, function()
         end
         
         -- Set the PlayTime value to the absoulte difference in clock times.
-        ply:SetProperty( "PlayTime", ply:GetProperty( "PlayTime" ) + math.abs(os.difftime(clock,last)) )
+        ply:SetProperty( "PlayTime", ply:GetProperty( "PlayTime" ) + 300 )
         ply.EV_LastPlaytimeSave = os.clock()
     end
     

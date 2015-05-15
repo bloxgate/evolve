@@ -1156,6 +1156,7 @@ if ( SERVER ) then
 			for k in pairs(sqlq[1].data) do
 				local _time = tonumber(k.BanEnd - tonumber(os.time()))
 				if k.BanEnd == 0 then _time = 0 end
+				evolve:GetProperty(k.BanAdmin, "Nick", "Console", function(admin)
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(uniqueid))
 					net.WriteString(k.Nick)

@@ -46,13 +46,13 @@ function PLUGIN:Call(ply, args)
 	
 	ply.EV_LastVotekick = os.time()
 	
-	evolve:Notify(evolve.colors.blue, ply:GetName(), evolve.colors.white, " started a vote to kick ", evolve.colors.red, victim:GetName())
+	evolve:Notify(evolve.colors.blue, ply:GetName() or "Console", evolve.colors.white, " started a vote to kick ", evolve.colors.red, victim:GetName())
 	
 	evolve:FindPlugin("Vote"):VoteStart("[Votekick] Kick player " .. victim:GetName(), {"Yes", "No"}, function(percent, absolute)
 		if #absolute == 0 then return end
 		if absolute[1] > (#player.GetAll())/2 then
 			evolve:Notify(evolve.colors.red, victim:GetName(), evolve.colors.white, " has been kicked by vote.")
-			evolve:Ban(victim:UniqueID(), self.BanTime*60, "Votekicked", 0)
+			evolve:Ban(victim:SteamID64(), self.BanTime*60, "Votekicked", 0)
 		else
 			evolve:Notify(evolve.colors.white, "Votekicking of ", evolve.colors.red, victim:GetName(), evolve.colors.white, " failed.")
 		end

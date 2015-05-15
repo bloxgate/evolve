@@ -1153,15 +1153,14 @@ if ( SERVER ) then
 		local function onSuccess(sqlq)
 			//local data = Query:getData()
 			SQLQG = sqlq
-			for k,v in pairs(sqlq[1].data) do
-				local _time = tonumber(sqlq[1].data[k].BanEnd - tonumber(os.time()))
-				if sqlq[1].data[k].BanEnd == 0 then _time = 0 end
-				evolve:GetProperty(sqlq[1].data[k].Nick, "Nick", "Console", function(admin)
+			for k in pairs(sqlq[1].data) do
+				local _time = tonumber(k.BanEnd - tonumber(os.time()))
+				if k.BanEnd == 0 then _time = 0 end
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(uniqueid))
-					net.WriteString(sqlq[1].data[k].Nick)
-					net.WriteString(util.SteamIDFrom64(sqlq[1].data[k].SteamID64))
-					net.WriteString(sqlq[1].data[k].BanReason)
+					net.WriteString(k.Nick)
+					net.WriteString(util.SteamIDFrom64(k.SteamID64))
+					net.WriteString(k.BanReason)
 					net.WriteString(admin)
 					net.WriteUInt(_time, 32)
 					if ply == nil then
@@ -1170,7 +1169,7 @@ if ( SERVER ) then
 						net.Send(ply)
 					end
 					//print("Found existing ban for: "..v.Nick)
-					game.ConsoleCommand( "banid " .. _time / 60 .. " " .. util.SteamIDFrom64(v.SteamID64) .. "\n" )
+					game.ConsoleCommand( "banid " .. _time / 60 .. " " .. util.SteamIDFrom64(k.SteamID64) .. "\n" )
 
 				end)
 			end
@@ -1247,8 +1246,8 @@ if ( SERVER ) then
 
 			sourcebans.UnbanPlayerBySteamID(util.SteamIDFrom64(uid), "No reason specified.", admin)
 		else
-			/*game.ConsoleCommand( "removeip \"" .. ( evolve:GetProperty( uid, "IPAddress" ) or "" ) .. "\"\n" )
-			game.ConsoleCommand( "removeid " .. evolve:GetProperty( uid, "SteamID" ) .. "\n" )*/
+			game.ConsoleCommand( "removeip \"" .. ( evolve:GetProperty( uid, "IPAddress" ) or "" ) .. "\"\n" )
+			game.ConsoleCommand( "removeid " .. evolve:GetProperty( uid, "SteamID" ) .. "\n" )
 		end
 	end
 

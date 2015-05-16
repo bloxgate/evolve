@@ -1153,15 +1153,15 @@ if ( SERVER ) then
 		local function onSuccess(sqlq)
 			//local data = Query:getData()
 			SQLQG = sqlq
-			for k in pairs(sqlq[1].data) do
-				local _time = tonumber(k.BanEnd - tonumber(os.time()))
+			for k,v in ipairs(sqlq[1].data) do
+				local _time = tonumber(v.BanEnd - tonumber(os.time()))
 				if k.BanEnd == 0 then _time = 0 end
-				evolve:GetProperty(k.BanAdmin, "Nick", "Console", function(admin)
+				evolve:GetProperty(v.BanAdmin, "Nick", "Console", function(admin)
 					net.Start("EV_BanEntry")
-					net.WriteString(tostring(uniqueid))
-					net.WriteString(k.Nick)
-					net.WriteString(util.SteamIDFrom64(k.SteamID64))
-					net.WriteString(k.BanReason)
+					net.WriteString(tostring(v.SteamID64))
+					net.WriteString(v.Nick)
+					net.WriteString(util.SteamIDFrom64(v.SteamID64))
+					net.WriteString(v.BanReason)
 					net.WriteString(admin)
 					net.WriteUInt(_time, 32)
 					if ply == nil then

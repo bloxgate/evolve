@@ -1155,7 +1155,7 @@ if ( SERVER ) then
 			SQLQG = sqlq
 			for k,v in ipairs(sqlq[1].data) do
 				local _time = tonumber(v.BanEnd - tonumber(os.time()))
-				if k.BanEnd == 0 then _time = 0 end
+				if v.BanEnd == 0 then _time = 0 end
 				evolve:GetProperty(v.BanAdmin, "Nick", "Console", function(admin)
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(v.SteamID64))

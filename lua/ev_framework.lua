@@ -566,10 +566,10 @@ end
 
 function evolve:GetProperty(steamid64, id, defaultvalue, callback)
 	steamid64 = tostring(steamid64)
-	if evolve.PlayerInfo[steamid64] then
-		callback(self.PlayerInfo[steamid64][id] or defaultvalue)
-		//return self.PlayerInfo[steamid64][id]
-	else
+	/*if evolve.PlayerInfo[steamid64] then
+		callback(evolve.PlayerInfo[steamid64].id or defaultvalue)
+		return evolve.PlayerInfo[steamid64][id]
+	else*/
 		self.database:Query("SELECT "..id.." FROM evolve WHERE SteamID64 = "..steamid64.." LIMIT 1;", callback)
 		/*qselect.callback = callback
 		qselect.onSuccess = function(qselect)
@@ -583,8 +583,7 @@ function evolve:GetProperty(steamid64, id, defaultvalue, callback)
 			end
 		end
 		qselect:start()*/
-	end
-	return defaultvalue --!
+	//end
 end
 
 function evolve:SetProperty(steamid64, id, value)
@@ -1148,15 +1147,15 @@ end
 if ( SERVER ) then
 
 	function evolve:SyncBans( ply )
-		evolve.database:Query("SELECT Nick,SteamID64,BanReason,BanEnd,BanAdmin FROM evolve WHERE BanEnd > "..os.time().." OR BanEnd = 0", onSuccess)
-		//Query.onSuccess = function(sqlq)
+		
 		local function onSuccess(sqlq)
 			//local data = Query:getData()
 			SQLQG = sqlq
 			for k,v in ipairs(sqlq[1].data) do
 				local _time = tonumber(v.BanEnd - tonumber(os.time()))
-				if k.BanEnd == 0 then _time = 0 end
+				if v.BanEnd == 0 then _time = 0 end
 				evolve:GetProperty(v.BanAdmin, "Nick", "Console", function(admin)
+					admin = admin[1].data[1].Nick
 					net.Start("EV_BanEntry")
 					net.WriteString(tostring(v.SteamID64))
 					net.WriteString(v.Nick)
@@ -1169,12 +1168,15 @@ if ( SERVER ) then
 					else
 						net.Send(ply)
 					end
-					//print("Found existing ban for: "..v.Nick)
-					game.ConsoleCommand( "banid " .. _time / 60 .. " " .. util.SteamIDFrom64(k.SteamID64) .. "\n" )
+					print("Found existing ban for: "..v.Nick)
+					game.ConsoleCommand( "banid " .. _time / 60 .. " " .. util.SteamIDFrom64(v.SteamID64) .. "\n" )
 
 				end)
 			end
 		end
+		
+		evolve.database:Query("SELECT Nick,SteamID64,BanReason,BanEnd,BanAdmin FROM evolve WHERE BanEnd > "..os.time().." OR BanEnd = 0", onSuccess)
+		//Query.onSuccess = function(sqlq)
 		/*function Query:OnError(err, sql)
 			print("BanSync Error: "..err.." in Query "..sql)
 		end
@@ -1190,8 +1192,9 @@ if ( SERVER ) then
 		evolve:SetProperty( uid, "BanReason", reason )
 		evolve:SetProperty( uid, "BanAdmin", adminuid )
 
-		evolve:GetProperty(uid, "Nick", nil, function(nick)
+		evolve:GetProperty(uid, "Nick", "Unknown Username", function(nick)
 			local a = "Console"
+			nick = nick[1].data[1].Nick
 			if ( adminuid == "0") then
 				//leave a the same
 			else a = evolve:GetBySteamID64(adminuid):Nick() end
@@ -1254,7 +1257,7 @@ if ( SERVER ) then
 
 	function evolve:IsBanned(steamid64, callback)
 		evolve:GetProperty(steamid64, "BanEnd", nil, function(banEnd)
-			print("BanEnd: "..banEnd)
+			banEnd = banEnd[1].data[1].BanEnd
 			if not banEnd then
 				callback(false)
 			else

@@ -52,7 +52,7 @@ function PLUGIN:Call(ply, args)
 		if #absolute == 0 then return end
 		if absolute[1] > (#player.GetAll())/2 then
 			evolve:Notify(evolve.colors.red, victim:GetName(), evolve.colors.white, " has been kicked by vote.")
-			evolve:Ban(victim:SteamID64(), self.BanTime*60, "Votekicked", 0)
+			evolve:Ban(victim:SteamID64(), self.BanTime*60, "Votekicked", "0")
 		else
 			evolve:Notify(evolve.colors.white, "Votekicking of ", evolve.colors.red, victim:GetName(), evolve.colors.white, " failed.")
 		end

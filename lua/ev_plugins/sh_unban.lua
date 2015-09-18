@@ -27,7 +27,11 @@ function PLUGIN:Call( ply, args )
 					if found then
 						evolve:GetProperty(steamid, "Nick", "<Unknown>", function(nick)
 							if banned then
-								evolve:UnBan(steamid, ply:SteamID())
+								if(IsValid(ply)) then
+									evolve:UnBan(steamid, ply:SteamID())
+								else
+									evolve:UnBan(steamid, 0)
+								end
 								evolve:Notify( evolve.colors.blue, ply:Nick(), color_white, " has unbanned ", evolve.colors.red, nick, color_white, "." )
 							else
 								evolve:Notify( ply, evolve.colors.red, nick .. " is not currently banned." )

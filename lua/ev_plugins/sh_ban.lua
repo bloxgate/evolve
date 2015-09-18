@@ -43,8 +43,9 @@ function PLUGIN:Call( ply, args )
 		-------------------------------------------------------------------------------------------------------------------------*/
 		
 		print("loelel")
-		local plyImmunity = tonumber( evolve.ranks[ ply:EV_GetRank() ].Immunity )
+		local plyImmunity = tonumber( evolve.ranks[ ply:EV_GetRank() or "guest" ].Immunity )
 		evolve:GetProperty(steamid64, "Rank", "guest", function(victim_rank)
+			victim_rank = victim_rank[1].data[1].Rank or "guest"
 			print("test!")
 			local vicImmunity = tonumber( evolve.ranks[victim_rank].Immunity )	
 			if ( !steamid64 or vicImmunity > plyImmunity ) then
@@ -60,7 +61,11 @@ function PLUGIN:Call( ply, args )
 			local reason = table.concat( args, " ", 3 )
 			if ( #reason == 0 ) then reason = "No reason specified" end
 			evolve:GetProperty(steamid64, "Nick", nil, function(nick)
-				evolve:Ban( steamid64, length, reason, ply:SteamID64() )
+				if(IsValid(ply)) then
+					evolve:Ban( steamid64, length, reason, ply:SteamID64() or "0" )
+				else
+					evolve:Ban( steamid64, length, reason, 0)
+				end
 				if ( length == 0 ) then
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " banned ", evolve.colors.red, nick, evolve.colors.white, " permanently (" .. reason .. ")." )
 				else
